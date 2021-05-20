@@ -1,0 +1,36 @@
+{
+    "locations":[
+       {
+          "id":6,
+          "location_name":"III max 336",
+          "time_from":"0:00",
+          "time_to":"23:30",
+          "max_advance_time":336,
+          "max_duration":null
+       },
+       {
+          "id":7,
+          "location_name":"IV Max dur 120",
+          "time_from":"0:00",
+          "time_to":"23:30",
+          "max_advance_time":null,
+          "max_duration":120
+       },
+       {
+          "id":3,
+          "location_name":"Kraków",
+          "time_from":"8:00",
+          "time_to":"16:00",
+          "max_advance_time":null,
+          "max_duration":null
+       },
+       {
+          "id":2,
+          "location_name":"Warszawa",
+          "time_from":"9:30",
+          "time_to":"17:30",
+          "max_advance_time":336,
+          "max_duration":120
+       }
+    ]
+ }
