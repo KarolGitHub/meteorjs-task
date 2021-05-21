@@ -2,14 +2,39 @@ import './form.html';
 
 import { locations } from './data';
 import Pikaday from 'pikaday';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { Template } from 'meteor/templating';
 
-Template.Form.onCreated(() => {});
+Template.Form.onCreated(function FormOnCreated() {
+  this.hoursFrom = new ReactiveVar(['08:00', '08:30', '09:00']);
+  this.hoursTo = new ReactiveVar(['08:00', '08:30', '09:00']);
 
-Template.Form.onRendered(() => {
+  const timeRangeToInt = (time) =>
+    ((hours, minutes) => hours * 2 + minutes / 30)(
+      ...time.split(':').map(parseFloat)
+    );
+  const toTime = (int) =>
+    [Math.floor(int / 2), int % 2 ? '30' : '00'].join(':');
+  const getSelectionFromRange = (from, to) =>
+    Array(to - from + 1)
+      .fill()
+      .map((_, i) => from + i);
+
+  this.generateTimeSelection = (from, to) => {
+    return getSelectionFromRange(...[from, to].map(timeRangeToInt)).map(toTime);
+  };
+});
+
+Template.Form.onRendered(function FormOnRendered() {
   this.$('select').select2({
     minimumResultsForSearch: 10,
     placeholder: 'Select something...',
   });
+
+  locationsIDs = [];
+  for (let i = 0; i < locations.curValue.length; i++) {
+    locationsIDs[`${locations.curValue[i].id}`] = i;
+  }
 
   // max_advance_time = time in hours how far in the future to allow selection
   // max_duration = time in minutes how long one selection can take
@@ -24,18 +49,21 @@ Template.Form.onRendered(() => {
 
 Template.Form.helpers({
   locations: () => locations.get(),
-
-  hoursFrom: () => {
-    return ['08:00', '08:30', '09:00'];
-  },
-
-  hoursTo: () => {
-    return ['08:30', '09:00', '09:30'];
-  },
+  hoursFrom: () => Template.instance().hoursFrom.get(),
+  hoursTo: () => Template.instance().hoursTo.get(),
 });
 
 Template.Form.events({
-  'change #location': (e) => {
-    console.log(e.target.value);
+  'change #location': (e, instance) => {
+    const getLocationID = locationsIDs[`${e.target.value}`];
+    const {
+      time_from: from,
+      time_to: to,
+      max_advance_time: advance,
+      max_duration: duration,
+    } = locations.curValue[getLocationID];
+    const timeRange = Template.instance().generateTimeSelection(from, to);
+    instance.hoursFrom.set(timeRange);
+    instance.hoursTo.set(timeRange);
   },
 });
