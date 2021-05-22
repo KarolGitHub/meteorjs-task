@@ -8,6 +8,7 @@ import { Template } from 'meteor/templating';
 Template.Form.onCreated(function FormOnCreated() {
   this.hoursFrom = new ReactiveVar(['08:00', '08:30', '09:00']);
   this.hoursTo = new ReactiveVar(['08:00', '08:30', '09:00']);
+  this.currentLocation = new ReactiveVar(null);
 
   const timeRangeToInt = (time) =>
     ((hours, minutes) => hours * 2 + minutes / 30)(
@@ -57,13 +58,45 @@ Template.Form.events({
   'change #location': (e, instance) => {
     const getLocationID = locationsIDs[`${e.target.value}`];
     const {
-      time_from: from,
-      time_to: to,
-      max_advance_time: advance,
-      max_duration: duration,
-    } = locations.curValue[getLocationID];
-    const timeRange = Template.instance().generateTimeSelection(from, to);
+      time_from: timeFrom,
+      time_to: timeTo,
+      max_advance_time: maxAdvanceTime,
+      max_duration: maxDuration,
+    } = locations.get()[getLocationID];
+
+    instance.currentLocation.set({
+      timeFrom,
+      timeTo,
+      maxAdvanceTime,
+      maxDuration,
+    });
+    const timeRange = Template.instance().generateTimeSelection(
+      timeFrom,
+      timeTo
+    );
     instance.hoursFrom.set(timeRange);
     instance.hoursTo.set(timeRange);
+  },
+  'change #time-from': function (e, instance) {
+    let maxDuration = instance.currentLocation.get()?.maxDuration;
+    if (maxDuration) {
+      const timeFromSelect = e.target;
+      const timeFrom = timeFromSelect.value;
+
+      let selectedIndex = timeFromSelect.selectedIndex;
+      maxDuration = Math.floor(maxDuration / 30);
+      const maxValue = selectedIndex + maxDuration;
+
+      const timeTo =
+        maxValue > timeFromSelect.length - 1
+          ? $($('#time-from').children()[timeFromSelect.length - 1]).val()
+          : $($('#time-from').children()[maxValue]).val();
+
+      const timeRange = Template.instance().generateTimeSelection(
+        timeFrom,
+        timeTo
+      );
+      instance.hoursTo.set(timeRange);
+    }
   },
 });
