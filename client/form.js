@@ -39,13 +39,15 @@ Template.Form.onRendered(function FormOnRendered() {
 
   // max_advance_time = time in hours how far in the future to allow selection
   // max_duration = time in minutes how long one selection can take
-  new Pikaday({
-    field: $('#datepicker').get(0),
-    format: 'YYYY-MM-DD',
-    onSelect: function () {
-      console.log(this.getMoment());
-    },
-  });
+  this.picker = new ReactiveVar(
+    new Pikaday({
+      field: $('#datepicker').get(0),
+      format: 'YYYY-MM-DD',
+      onSelect: function () {
+        console.log(this.getMoment());
+      },
+    })
+  );
 });
 
 Template.Form.helpers({
@@ -55,7 +57,7 @@ Template.Form.helpers({
 });
 
 Template.Form.events({
-  'change #location': (e, instance) => {
+  'change #location': function (e, instance) {
     const getLocationID = locationsIDs[`${e.target.value}`];
     const {
       time_from: timeFrom,
@@ -64,12 +66,25 @@ Template.Form.events({
       max_duration: maxDuration,
     } = locations.get()[getLocationID];
 
+    let maxAdvanceDay = null;
+
+    if (maxAdvanceTime) {
+      const presentDay = new Date();
+      maxAdvanceDay = new Date(
+        presentDay.setHours(presentDay.getHours() + maxAdvanceTime)
+      );
+      instance.picker.get().setMaxDate(maxAdvanceDay);
+    } else {
+      instance.picker.get().setMaxDate(null);
+    }
+
     instance.currentLocation.set({
       timeFrom,
       timeTo,
-      maxAdvanceTime,
+      maxAdvanceDay,
       maxDuration,
     });
+
     const timeRange = Template.instance().generateTimeSelection(
       timeFrom,
       timeTo
@@ -77,6 +92,7 @@ Template.Form.events({
     instance.hoursFrom.set(timeRange);
     instance.hoursTo.set(timeRange);
   },
+
   'change #time-from': function (e, instance) {
     let maxDuration = instance.currentLocation.get()?.maxDuration;
     if (maxDuration) {
